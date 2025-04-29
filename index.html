@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="style.css" />
+        <title>Math Game</title>
+    </head>
+    <body>
+        <div class="flex-container">
+            <div class="column">
+                <div class="row--shrink">
+                    <div class="header">PLAYER 1</div>
+                </div>
+                <div class="row--shrink">
+                    <div id="player1-score">SCORE: 0</div>
+                </div>
+                <div class="row">
+                    <input
+                        id="player1-input"
+                        class="box large-text"
+                        type="input"
+                        autocomplete="off"
+                        disabled="true;"
+                    />
+                </div>
+                <div class="row--shrink">
+                    <input id="player1-submit" class="button" type="submit" />
+                </div>
+            </div>
+            <div class="column">
+                <div class="row--shrink">
+                    <div class="header">QUESTION</div>
+                </div>
+                <div class="row">
+                    <div id="question" class="large-text">START</div>
+                </div>
+                <div class="row--shrink">
+                    <div
+                        id="count-down"
+                        class="box medium-text count-down"
+                    ></div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="row--shrink">
+                    <div class="header">COMPUTER</div>
+                </div>
+                <div class="row--shrink">
+                    <div id="player2-score">SCORE: 0</div>
+                </div>
+                <div class="row">
+                    <input
+                        id="player2-input"
+                        class="box large-text"
+                        type="input"
+                        autocomplete="off"
+                        disabled="true;"
+                    />
+                </div>
+                <div class="row--shrink">
+                    <div id="player2-eval" class="box medium-text"></div>
+                </div>
+            </div>
+        </div>
+        <script src="script.js"></script>
+    </body>
+</html>
