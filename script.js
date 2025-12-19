@@ -1,198 +1,198 @@
-const questionBox = document.getElementById("question");
-const countdownBox = document.getElementById("count-down");
-const p1Submit = document.getElementById("player1-submit");
-const p1Input = document.getElementById("player1-input");
-const p2Input = document.getElementById("player2-input");
-const p1Score = document.getElementById("player1-score");
-const p2Score = document.getElementById("player2-score");
+const ROUNDS_PER_GAME = 10;
+const TIME_LIMIT = 5;
+const OPERAND_LOWERLIM = 2;
+const OPERAND_UPPERLIM = 12;
+const ONE_EPOCH = 1000;
+const OPERATIONS = "x";
 
-let guessInTime = false;
-let equation = "";
-let guess = "";
-let answer = 0;
-let p1Wins = 0;
-let p2Wins = 0;
-let numQuestions = 0;
+const display = document.getElementById("screen");
+const timer = document.getElementById("timer");
+const input = document.getElementById("player");
+const score = document.getElementById("score");
 
-// Wait for DOM to load and then enable start button
-document.addEventListener("DOMContentLoaded", () => {
-    pressToStart();
+const state = {
+  correctGuess: false,
+  gameOver: false,
+  round: 0,
+  wins: 0,
+};
+
+let errors = {};
+
+for (let i = OPERAND_LOWERLIM; i <= OPERAND_UPPERLIM; i++) {
+  errors[i] = 0;
+}
+
+let question = "";
+let answer = "";
+
+document.addEventListener("DOMContentLoaded", async () => {
+  submitGuessOnEnter();
+  refreshScoreBoard();
+  runGameLoop();
 });
 
-// Enable press to start button
-function pressToStart() {
-    questionBox.textContent = "PLAY";
-    questionBox.classList.add("play");
-    questionBox.addEventListener("click", startGame, { once: true });
-}
+async function runGameLoop() {
+  clearDisplay();
+  clearPlayer();
 
-// Run main game sequence
-async function startGame() {
-    clearUI();
-    updateScoreBoard();
-    setNewEquation();
-    addPlayerListners(); // And handle inputs
+  setQuestionAndAnswer();
+  show(question);
 
-    let timeUp = await countdownTimer();
+  await countDownTimer();
 
-    if (timeUp) {
-        incorrectMsg();
-        p2Wins++;
-    } else {
-        correctMsg();
-        p1Wins++;
+  showFormattedAnswer(answer);
+
+  state.round++;
+  input.disabled = true;
+
+  refreshScoreBoard();
+
+  if (!state.correctGuess) {
+    let lhs = question.split(" ")[0];
+    let rhs = question.split(" ")[2];
+    errors[lhs] += 1;
+    errors[rhs] += 1;
+  }
+
+  setTimeout(() => {
+    if (state.round == ROUNDS_PER_GAME) {
+      endGame();
+      return;
     }
 
-    numQuestions++;
-    updateScoreBoard();
-
-    setTimeout(() => {
-        clearUI();
-        if (numQuestions < 10) {
-            startGame();
-        } else {
-            endGame();
-        }
-    }, 750);
+    state.correctGuess = false;
+    runGameLoop();
+  }, ONE_EPOCH);
 }
 
-function addPlayerListners() {
-    p1Input.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-            handlePlayerInput();
-        }
+async function countDownTimer() {
+  let timeRemaining = TIME_LIMIT;
+
+  while (timeRemaining > 0) {
+    showTime(timeRemaining--);
+    input.focus();
+
+    //delay 1 second (1000 ms)
+    for (let ms = 0; ms < ONE_EPOCH; ms += 100) {
+      if (state.correctGuess) break;
+      await sleep(100);
+    }
+  }
+
+  showTime("-");
+}
+
+function submitGuessOnEnter() {
+  if (input)
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        let guess = input.value;
+        if (guess) evaluateGuess(guess);
+      }
+      if (event.key === "Escape") input.value = "";
     });
-
-    p1Submit.addEventListener("click", () => {
-        handlePlayerInput();
-    });
 }
 
-function setNewEquation() {
-    const a = Math.floor(Math.random() * 25) + 1;
-    const b = Math.floor(Math.random() * 25) + 1;
-    const operators = ["x", "+", "-"];
+function evaluateGuess(guess) {
+  input.disabled = true;
 
-    if (a % b == 0) {
-        operators.push("/");
-    }
-
-    const randomIndex = Math.floor(Math.random() * operators.length);
-    const operator = operators[randomIndex];
-
-    // operator = "x";
-
-    equation = `${a} ${operator} ${b}`;
-    questionBox.textContent = equation;
-
-    switch (operator) {
-        case "x":
-            answer = a * b;
-            break;
-        case "/":
-            answer = a / b;
-            break;
-        case "+":
-            answer = a + b;
-            break;
-        case "-":
-            answer = a - b;
-            break;
-    }
+  if (guess.toString() === answer.toString()) {
+    state.correctGuess = true;
+    input.value = "✅";
+    state.wins++;
+  } else {
+    input.value = "❌";
+    setTimeout(clearPlayer, ONE_EPOCH);
+  }
 }
 
-// Run countdown timer and break if user guesses correctly
-async function countdownTimer() {
-    countdownBox.className = "box medium-text count-down";
-    guessInTime = false;
-    let seconds = 5;
-
-    while (seconds > 0 && !guessInTime) {
-        countdownBox.textContent = seconds;
-        for (let ms = 0; ms < 1000; ms += 100) {
-            if (guessInTime) break;
-            await sleep(100);
-        }
-        seconds--;
-    }
-
-    countdownBox.classList.add("correct");
-    countdownBox.textContent = `=${answer}`;
-
-    return !guessInTime; // Return time-up boolean signal
+function show(text) {
+  if (display == null) return;
+  display.textContent = text;
 }
 
-// Handle in-round input allowing multiple guesses
-function handlePlayerInput() {
-    if (p1Input.disabled) {
-        return;
-    }
-
-    guess = parseInt(p1Input.value);
-    if (guess === answer) {
-        guessInTime = true;
-        correctMsg();
-    } else {
-        incorrectMsg();
-        setTimeout(clearUI, 250);
-    }
+function showTime(time) {
+  if (timer == null) return;
+  timer.textContent = time;
 }
 
-function clearUI() {
-    p1Input.value = "";
-    p2Input.value = "";
-    countdownBox.textContent = "";
-    p1Input.className = "box large-text";
-    p1Input.disabled = false;
-    p1Submit.disabled = false;
-    countdownBox.classList.remove("correct");
-    questionBox.classList.remove("play");
-    p1Input.focus();
+function clearPlayer() {
+  input.value = "";
+  input.disabled = false;
+  input.focus();
 }
 
-function correctMsg() {
-    p1Input.className = "box medium-text correct";
-    p1Input.value = "CORRECT";
-    p1Input.disabled = true;
+function clearDisplay() {
+  show("");
+  display.classList.remove("answer");
+  if (!display.classList.contains("text-danger")) display.classList.add("text-danger");
 }
 
-function incorrectMsg() {
-    p1Input.className = "box medium-text incorrect";
-    p1Input.value = "INCORRECT";
-    p1Input.disabled = true;
+function clearTimer() {
+  showTime(0);
+  timer.disabled = false;
+}
+
+function setQuestionAndAnswer() {
+  const a = randIncl(OPERAND_LOWERLIM, OPERAND_UPPERLIM);
+  const b = randIncl(OPERAND_LOWERLIM, OPERAND_UPPERLIM);
+
+  const randIdx = randIncl(0, OPERATIONS.length - 1);
+  const operator = OPERATIONS.charAt(randIdx);
+
+  let result;
+  switch (operator) {
+    case "+":
+      result = a + b;
+      break;
+    case "-":
+      result = a - b;
+      break;
+    case "x":
+      result = a * b;
+      break;
+    case "/":
+      result = a / b;
+      break;
+  }
+
+  question = `${a} ${operator} ${b}`;
+  answer = Math.round(result);
+}
+
+function randIncl(min, max) {
+  return Math.floor(Math.floor(Math.random() * (max - min + 1)) + min);
+}
+
+function showFormattedAnswer(answer) {
+  if (!screen) return;
+  display.classList.remove("text-danger");
+  display.classList.add("answer");
+  show(answer);
 }
 
 function sleep(ms) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, ms);
-    });
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
-function updateScoreBoard() {
-    p1Score.textContent = `SCORE: ${p1Wins}/${numQuestions}`;
-    p2Score.textContent = `SCORE: ${p2Wins}/${numQuestions}`;
+function refreshScoreBoard() {
+  score.textContent = `${state.wins} / ${state.round}`;
 }
 
 function endGame() {
-    clearUI();
+  let statsText = Object.entries(errors)
+    .filter(([_, value]) => value != 0)
+    .map(([key, value]) => `${key} x table (${value} errors)`)
+    .join("\n");
 
-    if (p1Wins > p2Wins) {
-        p1Input.value = "WIN";
-        p2Input.value = "LOSS";
-    } else if (p2Wins === p1Wins) {
-        p1Input.value = "DRAW";
-        p2Input.value = "DRAW";
-    } else {
-        p1Input.value = "LOSS";
-        p2Input.value = "WIN";
-    }
+  if (!statsText || statsText == "") statsText += "Well done you had 0 errors!";
 
-    p1Input.disabled = true;
-    p1Submit.disabled = true;
+  show("GAME OVER");
+  document.getElementById("errors").textContent = statsText;
 
-    p1Wins = 0;
-    p2Wins = 0;
-    numQuestions = 0;
-
-    pressToStart();
+  input.disabled = true;
+  timer.disabled = true;
 }
