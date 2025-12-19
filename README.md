@@ -41,3 +41,5 @@ const OPERATIONS = "x"; // set to "+-x/" to add more operators
 - Add more operations or difficulty levels.
 - Persist scores to localStorage.
 - Add sound effects and accessibility tweaks (aria-live updates, larger color contrast).
+
+\*README generated using Codex
