@@ -1,26 +1,116 @@
-.answer {
+body {
+  background: linear-gradient(to right, rgb(14, 12, 29), rgb(45, 45, 45));
+  font-family: "Rubik", sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+  display: flex;
+  justify-content: center;
+}
+
+p {
+  margin: 0;
+}
+
+#form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 15px;
+  margin: 0 auto;
+}
+
+#input,
+.submitBtn,
+.restartBtn {
+  border: 1px solid rgb(255, 255, 255);
+  border-radius: 25px;
+  background: transparent;
+  padding: 15px;
+  color: rgba(141, 200, 255, 0.67);
+  font-size: medium;
+}
+
+.correct {
   color: green;
 }
 
-#errors {
-  font-size: 25px;
-  white-space: pre-line;
+.incorrect {
+  color: red;
 }
 
-#score {
-  font-size: 50px;
+.small {
+  padding-top: 12px;
+  color: red;
+  font-size: large;
 }
 
-#timer {
-  font-size: 75px;
+.submitBtn {
+  background: rgb(253, 148, 255);
+  color: black;
 }
 
-#screen {
-  font-size: 120px;
+.restartBtn {
+  background: transparent;
+  color: rgb(150, 150, 150);
+  border-color: rgb(150, 150, 150);
 }
 
-#player {
-  font-size: 120px;
+.head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  color: rgba(141, 200, 255, 0.67);
+  font-size: x-large;
+  padding-bottom: 20px;
+  align-items: center;
+}
+
+.card {
+  background: black;
+  width: 60%;
+  max-width: 900px;
+  margin: 20px;
+  padding: 40px;
+  border-radius: 25px;
+}
+
+.eyebrow {
+  font-size: small;
+  color: rgba(141, 200, 255, 0.67);
+  letter-spacing: 0em;
+  padding-bottom: 5px;
+}
+
+.question {
+  border: 1px solid white;
+  border-radius: 25px;
+  color: rgba(141, 200, 255, 0.67);
+  font-size: 100px;
+  font-display: auto;
   text-align: center;
-  caret-color: transparent;
+  margin: 20px 0px 20px 0px;
+  padding: 50px;
+}
+
+pre {
+  margin: 0;
+  padding: 12px 0 0 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  text-align: center;
+  line-height: 1;
+}
+
+.stats {
+  font-size: x-large;
+  text-align: center;
+  display: grid;
+  grid-template-columns: auto auto auto;
+  gap: 12px;
+  color: white;
+}
+
+.stats__col {
+  border: 1px solid white;
+  border-radius: 25px;
+  letter-spacing: 5px;
+  padding: 10px;
 }

@@ -1,145 +1,124 @@
-const ROUNDS_PER_GAME = 10;
-const TIME_LIMIT = 5;
-const OPERAND_LOWERLIM = 2;
-const OPERAND_UPPERLIM = 12;
-const ONE_EPOCH = 1000;
-const OPERATIONS = "x";
-
-const display = document.getElementById("screen");
-const timer = document.getElementById("timer");
-const input = document.getElementById("player");
-const score = document.getElementById("score");
-
-const state = {
-  correctGuess: false,
-  gameOver: false,
-  round: 0,
-  wins: 0,
+const CONFIG = {
+  maxRounds: 10,
+  timeLimit: 5,
+  operandMin: 2,
+  operandMax: 12,
+  operations: "x",
 };
 
-let errors = {};
+const scoreEl = document.getElementById("score");
+const timerEl = document.getElementById("timer");
+const streakEl = document.getElementById("streak");
+const questionEl = document.getElementById("question");
+const questionEyebrowEl = document.getElementById("question__eyebrow");
+const formEl = document.getElementById("form");
+const inputEl = document.getElementById("input");
+const restartBtn = document.getElementById("restart-btn");
 
-for (let i = OPERAND_LOWERLIM; i <= OPERAND_UPPERLIM; i++) {
-  errors[i] = 0;
+const state = {
+  round: 0,
+  score: 0,
+  timeLeft: CONFIG.timeLimit,
+  streak: 0,
+  timer: null,
+  question: null,
+  answer: null,
+  gameOver: false,
+  errors: new Map(),
+};
+
+formEl?.addEventListener("submit", handleSubmit);
+restartBtn?.addEventListener("click", start);
+
+start();
+
+function start() {
+  setQuestionEyebrow("QUESTION");
+  stopTimer();
+  enableInput();
+  focusInput();
+
+  state.gameOver = false;
+  state.round = 0;
+
+  startRound();
 }
 
-let question = "";
-let answer = "";
+function startRound() {
+  updateStats();
+  enableInput();
 
-document.addEventListener("DOMContentLoaded", async () => {
-  submitGuessOnEnter();
-  refreshScoreBoard();
-  runGameLoop();
-});
-
-async function runGameLoop() {
-  clearDisplay();
-  clearPlayer();
-
-  setQuestionAndAnswer();
-  show(question);
-
-  await countDownTimer();
-
-  showFormattedAnswer(answer);
-
-  state.round++;
-  input.disabled = true;
-
-  refreshScoreBoard();
-
-  if (!state.correctGuess) {
-    let lhs = question.split(" ")[0];
-    let rhs = question.split(" ")[2];
-    errors[lhs] += 1;
-    errors[rhs] += 1;
+  if (state.round >= CONFIG.maxRounds) {
+    endGame();
+    return;
   }
 
-  setTimeout(() => {
-    if (state.round == ROUNDS_PER_GAME) {
-      endGame();
+  focusInput();
+
+  const { question, answer } = buildQuestion();
+  state.question = question;
+  state.answer = answer;
+  show(question, "large");
+
+  state.timeLeft = CONFIG.timeLimit;
+  runTimer();
+}
+
+function runTimer() {
+  state.timer = setInterval(() => {
+    updateTime();
+    focusInput();
+    if (state.timeLeft <= 0) {
+      handleAnswer(false);
       return;
     }
-
-    state.correctGuess = false;
-    runGameLoop();
-  }, ONE_EPOCH);
+    state.timeLeft -= 1;
+  }, 1000);
 }
 
-async function countDownTimer() {
-  let timeRemaining = TIME_LIMIT;
+function handleSubmit(event) {
+  event.preventDefault();
 
-  while (timeRemaining > 0) {
-    showTime(timeRemaining--);
-    input.focus();
-
-    //delay 1 second (1000 ms)
-    for (let ms = 0; ms < ONE_EPOCH; ms += 100) {
-      if (state.correctGuess) break;
-      await sleep(100);
-    }
+  if (!inputEl.value.trim() || state.gameOver) {
+    clearInput();
+    return;
   }
 
-  showTime("-");
+  const answer = inputEl.value;
+  clearInput();
+
+  if (!Number.isFinite(Number(answer))) {
+    console.log("invalid entry:", answer);
+    return;
+  }
+
+  handleAnswer(answer == state.answer);
 }
 
-function submitGuessOnEnter() {
-  if (input)
-    input.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        let guess = input.value;
-        if (guess) evaluateGuess(guess);
-      }
-      if (event.key === "Escape") input.value = "";
-    });
-}
+function handleAnswer(isCorrect) {
+  stopTimer();
+  disableInput();
 
-function evaluateGuess(guess) {
-  input.disabled = true;
-
-  if (guess.toString() === answer.toString()) {
-    state.correctGuess = true;
-    input.value = "✅";
-    state.wins++;
+  if (isCorrect) {
+    state.score += 1;
+    state.streak += 1;
+    show("✓", "correct");
   } else {
-    input.value = "❌";
-    setTimeout(clearPlayer, ONE_EPOCH);
+    state.streak = 0;
+    updateErrors();
+    show(`❌ ${state.answer}`, "incorrect");
   }
+
+  state.round += 1;
+  setTimeout(startRound, 500);
 }
 
-function show(text) {
-  if (display == null) return;
-  display.textContent = text;
-}
+function buildQuestion() {
+  const a = randIncl(CONFIG.operandMin, CONFIG.operandMax);
+  const b = randIncl(CONFIG.operandMin, CONFIG.operandMax);
 
-function showTime(time) {
-  if (timer == null) return;
-  timer.textContent = time;
-}
-
-function clearPlayer() {
-  input.value = "";
-  input.disabled = false;
-  input.focus();
-}
-
-function clearDisplay() {
-  show("");
-  display.classList.remove("answer");
-  if (!display.classList.contains("text-danger")) display.classList.add("text-danger");
-}
-
-function clearTimer() {
-  showTime(0);
-  timer.disabled = false;
-}
-
-function setQuestionAndAnswer() {
-  const a = randIncl(OPERAND_LOWERLIM, OPERAND_UPPERLIM);
-  const b = randIncl(OPERAND_LOWERLIM, OPERAND_UPPERLIM);
-
-  const randIdx = randIncl(0, OPERATIONS.length - 1);
-  const operator = OPERATIONS.charAt(randIdx);
+  const randIdx = randIncl(0, CONFIG.operations.length - 1);
+  const operator = CONFIG.operations.charAt(randIdx);
 
   let result;
   switch (operator) {
@@ -153,46 +132,99 @@ function setQuestionAndAnswer() {
       result = a * b;
       break;
     case "/":
+      if (a % b != 0) {
+        buildQuestion();
+        break;
+      }
       result = a / b;
       break;
   }
 
-  question = `${a} ${operator} ${b}`;
-  answer = Math.round(result);
+  const question = `${a} ${operator} ${b}`;
+  const answer = Math.round(result);
+
+  return { question, answer };
+}
+
+function show(text, style) {
+  questionEl.classList.remove("small", "correct", "incorrect", "gameOver");
+
+  if (style == "small") questionEl.classList.add("small");
+  if (style == "correct") questionEl.classList.add("correct");
+  if (style == "incorrect") questionEl.classList.add("incorrect");
+  if (style == "gameOver") questionEl.classList.add("gameOver");
+
+  questionEl.textContent = text;
+}
+
+function endGame() {
+  state.gameOver = true;
+  disableInput();
+  show("Game Over", "correct");
+  setTimeout(showErrors, 1000);
+}
+
+function showErrors() {
+  const result = [...state.errors.entries()]
+    .map(([key, value]) => `${key} x table => errors: ${value}\n`)
+    .join("\n");
+
+  setQuestionEyebrow("ERRORS");
+
+  if (result == "") {
+    show("No errors, nice!", "small");
+    return;
+  }
+
+  show(result, "small");
+}
+
+function updateStats() {
+  scoreEl.textContent = `${state.score} / ${state.round}`;
+  streakEl.textContent = state.streak;
+}
+
+function stopTimer() {
+  clearInterval(state.timer);
+  state.timer = null;
+  state.timeLeft = "-";
+  updateTime();
+}
+
+function updateErrors() {
+  const question = questionEl.textContent;
+  const [a, b] = question.split("x").map((op) => op.trim());
+
+  for (const value of [a, b]) {
+    let existing = state.errors.get(value) ?? 0;
+    state.errors.set(value, existing + 1);
+  }
 }
 
 function randIncl(min, max) {
   return Math.floor(Math.floor(Math.random() * (max - min + 1)) + min);
 }
 
-function showFormattedAnswer(answer) {
-  if (!screen) return;
-  display.classList.remove("text-danger");
-  display.classList.add("answer");
-  show(answer);
+function disableInput() {
+  inputEl.disabled = true;
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
+function enableInput() {
+  inputEl.disabled = false;
 }
 
-function refreshScoreBoard() {
-  score.textContent = `${state.wins} / ${state.round}`;
+function focusInput() {
+  inputEl.focus();
 }
 
-function endGame() {
-  let statsText = Object.entries(errors)
-    .filter(([_, value]) => value != 0)
-    .map(([key, value]) => `${key} x table (${value} errors)`)
-    .join("\n");
+function updateTime() {
+  timerEl.textContent = state.timeLeft;
+}
 
-  if (!statsText || statsText == "") statsText += "Well done you had 0 errors!";
+function clearInput() {
+  inputEl.value = "";
+}
 
-  show("GAME OVER");
-  document.getElementById("errors").textContent = statsText;
-
-  input.disabled = true;
-  timer.disabled = true;
+function setQuestionEyebrow(text) {
+  questionEyebrowEl.innerHTML = text;
 }
