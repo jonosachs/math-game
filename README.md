@@ -1,45 +1,43 @@
-# Maths-Game
+# Math-Game
 
-A quick-fire multiplication practice game. Answer as many questions as you can in 10 rounds, each with a 5 second timer. Stats at the end highlight which tables tripped you up so you know where to focus.
+Fast multiplication drills: answer before the timer runs out, track your streaks, and review tables that need work.
 
 ![Game screenshot](image.png)
 
 ## How to play
 
-- Open `index.html` in any modern browser (no install needed).
-- Type your answer in the input box and press `Enter` to submit; `Escape` clears the box.
-- Each round ends when you answer correctly or the 5 second timer runs out.
-- After 10 rounds the game shows your score and lists the tables you missed.
+- Open `index.html` in any modern browser (no install or build step).
+- Type the answer and press **Submit** (or hit Enter).
+- You get 5 seconds per question; 10 rounds per game.
+- Correct answers boost your score and streak; wrong/expired rounds reset the streak.
+- After 10 rounds, the game shows which tables caused mistakes.
 
-## Game details
+## Game rules and tuning
 
-- Operations: multiplication only (`x`).
-- Operand range: 2–12.
-- Rounds: 10 per game.
-- Timer: 5 seconds per question.
-- End-of-game feedback: counts of mistakes per multiplication table.
-
-You can tweak these values in `script.js`:
+Adjust the knobs in `script.js` under `CONFIG`:
 
 ```js
-const ROUNDS_PER_GAME = 10;
-const TIME_LIMIT = 5; // seconds per question
-const OPERAND_LOWERLIM = 2;
-const OPERAND_UPPERLIM = 12;
-const OPERATIONS = "x"; // set to "+-x/" to add more operators
+const CONFIG = {
+  maxRounds: 10, // total questions per game
+  timeLimit: 5, // seconds per question
+  operandMin: 2, // smallest factor
+  operandMax: 12, // largest factor
+  operations: "x", // allowed operators (e.g., "+-x/")
+};
 ```
 
-## Project structure
+## Interface and behavior
 
-- `index.html` – layout and Bootstrap includes.
-- `style.css` – custom sizing and colors for the timer, score, and input.
-- `script.js` – game loop, countdown, scoring, and error tracking.
-- `image.png` – example gameplay screenshot.
+- Compact card layout with Rubik/Space Grotesk typography (`index.html`, `style.css`).
+- Stats bar for score, timer, and streak.
+- Question area highlights correctness with ✓/✕ feedback.
+- Restart button resets score, streak, timer, and error tracking.
 
-## Possible enhancements
+## Files
 
-- Add more operations or difficulty levels.
-- Persist scores to localStorage.
-- Add sound effects and accessibility tweaks (aria-live updates, larger color contrast).
+- `index.html` – markup and font includes.
+- `style.css` – layout, gradients, and interaction states.
+- `script.js` – game loop, timer, scoring, streaks, error summary.
+- `image.png` – reference screenshot.
 
 \*README generated using Codex
